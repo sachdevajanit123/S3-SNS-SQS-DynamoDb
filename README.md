@@ -1,33 +1,18 @@
-# Spring Cloud AWS
+The business process will be developed completely on the AWS public cloud using multiple
+managed services with some custom code for data transformation.
 
-# Relevant Articles
-- [Spring Cloud AWS – S3](https://www.baeldung.com/spring-cloud-aws-s3)
-- [Spring Cloud AWS – EC2](https://www.baeldung.com/spring-cloud-aws-ec2)
-- [Spring Cloud AWS – RDS](https://www.baeldung.com/spring-cloud-aws-rds)
-- [Spring Cloud AWS – Messaging Support](https://www.baeldung.com/spring-cloud-aws-messaging)
-- [Instance Profile Credentials using Spring Cloud](http://www.baeldung.com/spring-cloud-instance-profiles)
+1. The customer uploads the invoice data to S3 bucket in a text format as per their guidelines
+and policies. This bucket will have a policy to auto delete any content that is more than 1 day
+old (24 hours).
 
-#### Running the Integration Tests
+2. An event will trigger in the bucket that will place a message in SNS topic.
 
-To run the Live Tests, we need to have an AWS account and have API keys generated for programmatic access. Edit 
-the `application.properties` file to add the following properties:
+3. A custom program running in EC2 will subscribe to the SNS topic and get the message placed
+by S3 event.
 
-```
-cloud.aws.credentials.accessKey=YourAccessKey
-cloud.aws.credentials.secretKey=YourSecretKey
-cloud.aws.region.static=us-east-1
-```
+4. The program will use S3 API to read from the bucket, parse the content of the file and create a
+CSV record along with saving the original record in DynamoDB.
 
-To test automatic DataSource creation from RDS instance, we also need to create an RDS instance in the AWS account.
-Let's say that the RDS instance is called `spring-cloud-test-db` having the master password `se3retpass`, then we need 
-to write the following in `application.properties`:
+5. The program will use S3 API to write CSV record to destination S3 bucket as new S3 object.
 
-```
-cloud.aws.rds.spring-cloud-test-db
-cloud.aws.rds.spring-cloud-test-db.password=se3retpass
-```
-Multiple application classes are available under this project. To launch InstanceProfileAwsApplication application, replace `start-class` under `pom.xml`:
-
-```
-<start-class>com.baeldung.spring.cloud.aws.InstanceProfileAwsApplication</start-class>
-```
+6. Athena is used to query the CSV file (query to show aggregated expenses grouped by date).
